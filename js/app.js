@@ -1,8 +1,9 @@
 // --- CONFIGURATION ---
-const ENV = window.ENV || {};
-const API_KEY = ENV.TMDB_API_KEY || '2b8729dac2ce27ba8ed909771f82c2a8'; 
-const API_BASE_URL = ENV.TMDB_API_BASE_URL || 'https://api.themoviedb.org/3/';
-const IMAGE_BASE_URL = ENV.TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/w500';
+const API_KEY = (typeof window.TMDB_API_KEY !== 'undefined') ? window.TMDB_API_KEY : '';
+const API_BASE_URL = 'https://api.themoviedb.org/3/';
+const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/w780';
+const PROFILE_BASE_URL = 'https://image.tmdb.org/t/p/w185';
 
 // --- DOM Elements ---
 const searchInput = document.getElementById('search-input');
@@ -20,22 +21,21 @@ const categoryIndexBar = document.getElementById('category-index-bar');
 const categoryMainContent = document.getElementById('category-main-content');
 const indexContent = document.getElementById('index-content');
 
+// Modal + toast elements
+const movieModal = document.getElementById('movie-modal');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const toastEl = document.getElementById('toast');
+
 // --- STATE ---
 let currentFocus = -1; 
 let genreMap = {}; 
 let currentView = 'home';
-let localWatchlistMap = new Map(); // Fallback storage if Firestore is unconfigured
-
-// Firebase State
-let db, userId, appId;
-let firebaseSDK = {};
+let homeLoaded = false;
+let categoriesLoaded = false;
+let toastTimer = null;
 
 // --- CATEGORIES DEFINITION ---
-const SPOTLIGHT_CONFIG = [
-    { name: "Popular Films (English)", lang: 'en' },
-    { name: "Popular Films (Hindi)", lang: 'hi' },
-];
-
 const CATEGORIES_CONFIG = [
     { name: "Trending Action", genre_id: 28 },
     { name: "Trending Adventure", genre_id: 12 },
@@ -52,7 +52,6 @@ const CATEGORIES_CONFIG = [
 const DISCOVER_BASE_URL = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1`;
 const MAX_RETRIES = 3;
 
-// Utility to create URL-safe IDs
 function slugify(text) {
     return text.toLowerCase()
         .trim()
@@ -61,151 +60,82 @@ function slugify(text) {
         .replace(/^-+|-+$/g, '');
 }
 
-// --- WATCHLIST LOGIC ---
-const WATCHLIST_COLLECTION = 'watchlist';
+// --- WATCHLIST LOGIC (stored locally in the browser via localStorage) ---
+const WATCHLIST_STORAGE_KEY = 'movieHunt_watchlist_v1';
+let currentWatchlist = new Set(); 
+let watchlistData = {};           
 
-function getWatchlistPath() {
-    if (!userId || !appId) return null;
-    return `artifacts/${appId}/users/${userId}/${WATCHLIST_COLLECTION}`;
+function loadWatchlistFromStorage() {
+    try {
+        const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+        watchlistData = raw ? JSON.parse(raw) : {};
+    } catch (error) {
+        console.error('Error reading watchlist from localStorage:', error);
+        watchlistData = {};
+    }
+    currentWatchlist = new Set(Object.keys(watchlistData).map(id => parseInt(id)));
+}
+
+function saveWatchlistToStorage() {
+    try {
+        localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlistData));
+    } catch (error) {
+        console.error('Error saving watchlist to localStorage:', error);
+        showToast('Could not save — storage may be full or disabled.');
+    }
 }
 
 function updateLikeButtons() {
-    document.querySelectorAll('.movie-card').forEach(card => {
-        const likeBtn = card.querySelector('.like-btn');
-        if (likeBtn) {
-            const movieId = parseInt(likeBtn.dataset.id);
-            if (currentWatchlist.has(movieId)) {
-                likeBtn.classList.add('liked');
-            } else {
-                likeBtn.classList.remove('liked');
-            }
-        }
+    document.querySelectorAll('.like-btn').forEach(likeBtn => {
+        const movieId = parseInt(likeBtn.dataset.id);
+        likeBtn.classList.toggle('liked', currentWatchlist.has(movieId));
     });
-}
-
-async function fetchWatchlist() {
-    const watchlistRef = getWatchlistPath();
-    if (!watchlistRef || !db || !firebaseSDK.getDocs) {
-        // Fallback to local storage / memory
-        try {
-            const stored = localStorage.getItem('movie_hunt_watchlist');
-            if (stored) {
-                const arr = JSON.parse(stored);
-                return arr;
-            }
-        } catch(e) {}
-        return Array.from(localWatchlistMap.values());
-    }
-
-    try {
-        const snapshot = await firebaseSDK.getDocs(firebaseSDK.collection(db, watchlistRef));
-        return snapshot.docs.map(doc => ({ id: parseInt(doc.id), docId: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("Error fetching watchlist from Firestore:", error);
-        return Array.from(localWatchlistMap.values());
+    const modalBtn = document.getElementById('modal-watchlist-btn');
+    if (modalBtn) {
+        const liked = currentWatchlist.has(parseInt(modalBtn.dataset.id));
+        modalBtn.classList.toggle('liked', liked);
+        modalBtn.textContent = liked ? '✓ In Watchlist' : '+ Add to Watchlist';
     }
 }
 
-let watchlistListenerUnsubscribe = null;
-let currentWatchlist = new Set(); 
+function toggleWatchlist(movie) {
+    const movieId = parseInt(movie.id);
 
-function setupWatchlistListener() {
-    if (watchlistListenerUnsubscribe) {
-        watchlistListenerUnsubscribe();
-    }
-    const watchlistRef = getWatchlistPath();
-    if (!watchlistRef || !db || !firebaseSDK.onSnapshot) {
-        // Local mode fallback initialization
-        try {
-            const stored = localStorage.getItem('movie_hunt_watchlist');
-            if (stored) {
-                const arr = JSON.parse(stored);
-                currentWatchlist.clear();
-                arr.forEach(item => {
-                    localWatchlistMap.set(item.id, item);
-                    currentWatchlist.add(item.id);
-                });
-                updateLikeButtons();
-            }
-        } catch(e) {}
-        return;
+    if (currentWatchlist.has(movieId)) {
+        currentWatchlist.delete(movieId);
+        delete watchlistData[movieId];
+        showToast('Removed from Watchlist');
+    } else {
+        currentWatchlist.add(movieId);
+        watchlistData[movieId] = {
+            id: movieId,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            release_date: movie.release_date,
+            vote_average: movie.vote_average,
+            genre_ids: movie.genre_ids || (movie.genres ? movie.genres.map(g => g.id) : [])
+        };
+        showToast('Added to Watchlist');
     }
 
-    watchlistListenerUnsubscribe = firebaseSDK.onSnapshot(firebaseSDK.collection(db, watchlistRef), (snapshot) => {
-        currentWatchlist.clear();
-        snapshot.docs.forEach(doc => {
-            currentWatchlist.add(parseInt(doc.id));
-        });
-        
-        updateLikeButtons(); 
+    saveWatchlistToStorage();
+    updateLikeButtons();
 
-        if (currentView === 'watchlist') {
-            renderWatchlist();
-        }
-    }, (error) => {
-        console.error("Watchlist real-time listener error:", error);
-    });
-}
-
-async function toggleWatchlist(movie) {
-    const watchlistRef = getWatchlistPath();
-    const movieId = parseInt(movie.id); 
-
-    const movieToSave = {
-        id: movieId,
-        title: movie.title,
-        poster_path: movie.poster_path,
-        release_date: movie.release_date,
-        vote_average: movie.vote_average,
-        genre_ids: movie.genre_ids || (movie.genres ? movie.genres.map(g => g.id) : [])
-    };
-
-    if (!db || !watchlistRef || !firebaseSDK.setDoc) {
-        // Fallback local storage implementation
-        if (currentWatchlist.has(movieId)) {
-            currentWatchlist.delete(movieId);
-            localWatchlistMap.delete(movieId);
-        } else {
-            currentWatchlist.add(movieId);
-            localWatchlistMap.set(movieId, movieToSave);
-        }
-        try {
-            localStorage.setItem('movie_hunt_watchlist', JSON.stringify(Array.from(localWatchlistMap.values())));
-        } catch(e) {}
-        updateLikeButtons();
-        if (currentView === 'watchlist') {
-            renderWatchlist();
-        }
-        return;
-    }
-
-    const docRef = firebaseSDK.doc(db, watchlistRef, String(movieId));
-
-    try {
-        if (currentWatchlist.has(movieId)) {
-            await firebaseSDK.deleteDoc(docRef);
-            console.log(`Movie ID ${movieId} removed from watchlist.`);
-        } else {
-            await firebaseSDK.setDoc(docRef, movieToSave);
-            console.log(`Movie ID ${movieId} added to watchlist.`);
-        }
-    } catch (error) {
-        console.error("Error toggling watchlist item:", error);
+    if (currentView === 'watchlist') {
+        renderWatchlist();
     }
 }
 
 function isLiked(movieId) {
-    return currentWatchlist.has(movieId);
+    return currentWatchlist.has(parseInt(movieId));
 }
 
-async function renderWatchlist() {
-    watchlistView.innerHTML = '<div class="message animate-pulse">Loading your Watchlist...</div>';
-    
-    const list = await fetchWatchlist(); 
-    
+function renderWatchlist() {
+    const list = Object.values(watchlistData).sort((a, b) => a.title.localeCompare(b.title));
+
     watchlistView.innerHTML = '';
     if (list.length === 0) {
-        watchlistView.innerHTML = '<div class="message">Your watchlist is empty. Go like some movies!</div>';
+        watchlistView.innerHTML = '<div class="message">Your watchlist is empty. Tap the heart icon on any movie to add it here.</div>';
     } else {
         displayMovies(list, "My Watchlist", watchlistView, true, 'watchlist-results');
     }
@@ -255,6 +185,155 @@ async function fetchMovieDetailsByID(tmdbID) {
     }
 }
 
+async function fetchMovieFullDetails(tmdbID) {
+    const url = `${API_BASE_URL}movie/${tmdbID}?api_key=${API_KEY}&append_to_response=credits,videos`;
+    try {
+        const response = await fetchWithBackoff(url);
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching full details for ID ${tmdbID}:`, error);
+        return null;
+    }
+}
+
+// --- UI HELPERS ---
+
+function requireApiKey(container) {
+    if (API_KEY) return true;
+    container.innerHTML = `
+        <div class="message error">
+            <strong>Missing TMDB API key.</strong><br>
+            Copy <code>config.example.js</code> to <code>config.js</code> and add your
+            <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" style="color:var(--color-action); text-decoration:underline;">TMDB API key</a>, then reload the page.
+        </div>`;
+    return false;
+}
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function debounce(fn, delayMs) {
+    let timer = null;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delayMs);
+    };
+}
+
+function showToast(message) {
+    if (!toastEl) return;
+    clearTimeout(toastTimer);
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+function findTrailerKey(videos) {
+    if (!videos || !Array.isArray(videos.results)) return null;
+    const trailer = videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+        || videos.results.find(v => v.site === 'YouTube');
+    return trailer ? trailer.key : null;
+}
+
+// --- MOVIE DETAIL MODAL ---
+
+async function openMovieModal(movieId) {
+    if (!movieModal) return;
+    movieModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    modalBody.innerHTML = '<div class="message animate-pulse" style="box-shadow:none; margin:60px auto;">Loading details...</div>';
+
+    const movie = await fetchMovieFullDetails(movieId);
+
+    if (!movieModal.classList.contains('open')) return;
+
+    if (!movie || movie.success === false) {
+        modalBody.innerHTML = '<div class="message error" style="box-shadow:none; margin:60px auto;">Could not load movie details. Please try again.</div>';
+        return;
+    }
+    renderModalContent(movie);
+}
+
+function closeMovieModal() {
+    if (!movieModal) return;
+    movieModal.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function renderModalContent(movie) {
+    const poster = movie.poster_path
+        ? IMAGE_BASE_URL + movie.poster_path
+        : 'https://placehold.co/400x600/D1D5DB/6B7280?text=POSTER+N/A';
+    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+    const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+    const runtime = movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : null;
+    const genrePills = (movie.genres || []).map(g => `<span class="genre-pill">${escapeHtml(g.name)}</span>`).join('');
+    const liked = isLiked(movie.id);
+    const trailerKey = findTrailerKey(movie.videos);
+    const cast = (movie.credits && Array.isArray(movie.credits.cast)) ? movie.credits.cast.slice(0, 8) : [];
+
+    modalBody.innerHTML = `
+        <div class="modal-header">
+            <img class="modal-poster" src="${poster}" alt="${escapeHtml(movie.title)} poster"
+                 onerror="this.onerror=null;this.src='https://placehold.co/400x600/D1D5DB/6B7280?text=POSTER+N/A';">
+            <div class="modal-info">
+                <h2 id="modal-title-text" class="modal-title">${escapeHtml(movie.title)}</h2>
+                ${movie.tagline ? `<p class="modal-tagline">"${escapeHtml(movie.tagline)}"</p>` : ''}
+                <div class="modal-meta">
+                    <div class="rating-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        ${rating}
+                    </div>
+                    <span class="genre-pill">${year}</span>
+                    ${runtime ? `<span class="genre-pill">${runtime}</span>` : ''}
+                    ${genrePills}
+                </div>
+                <p class="modal-overview">${movie.overview ? escapeHtml(movie.overview) : 'No overview available.'}</p>
+                <div class="modal-actions">
+                    <button id="modal-watchlist-btn" class="modal-watchlist-btn ${liked ? 'liked' : ''}" data-id="${movie.id}">${liked ? '✓ In Watchlist' : '+ Add to Watchlist'}</button>
+                    ${trailerKey ? `<a class="modal-trailer-btn" href="https://www.youtube.com/watch?v=${trailerKey}" target="_blank" rel="noopener noreferrer">▶ Watch Trailer</a>` : ''}
+                </div>
+            </div>
+        </div>
+        ${cast.length > 0 ? `
+        <div class="modal-cast-section">
+            <div class="modal-cast-title">Top Cast</div>
+            <div class="cast-scroll">
+                ${cast.map(actor => `
+                    <div class="cast-member">
+                        <img src="${actor.profile_path ? PROFILE_BASE_URL + actor.profile_path : 'https://placehold.co/185x185/D1D5DB/6B7280?text=%3F'}"
+                             alt="${escapeHtml(actor.name)}" loading="lazy"
+                             onerror="this.onerror=null;this.src='https://placehold.co/185x185/D1D5DB/6B7280?text=%3F';">
+                        <div class="cast-name">${escapeHtml(actor.name)}</div>
+                        <div class="cast-character">${escapeHtml(actor.character || '')}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>` : ''}
+    `;
+
+    document.getElementById('modal-watchlist-btn').addEventListener('click', () => {
+        toggleWatchlist(movie);
+    });
+}
+
+if (modalClose) modalClose.addEventListener('click', closeMovieModal);
+if (movieModal) {
+    movieModal.addEventListener('click', (e) => {
+        if (e.target === movieModal) closeMovieModal();
+    });
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && movieModal && movieModal.classList.contains('open')) closeMovieModal();
+});
+
 function interleaveMovies(listA, listB, limit) {
     const mixedMovies = [];
     let indexA = 0;
@@ -285,7 +364,8 @@ function interleaveMovies(listA, listB, limit) {
 // --- CONTENT FETCHERS ---
 
 async function fetchSpotlightContent() {
-    if (homeView.innerHTML.includes('category-grid') && !homeView.innerHTML.includes('animate-pulse')) return;
+    if (homeLoaded) return;
+    if (!requireApiKey(homeView)) return;
 
     homeView.innerHTML = '<div class="message animate-pulse">Building the 50/50 Mixed Spotlight...</div>';
     
@@ -306,6 +386,7 @@ async function fetchSpotlightContent() {
         homeView.innerHTML = '';
         if (spotlightMovies.length > 0) {
             displayMovies(spotlightMovies, "Movies of the Day", homeView);
+            homeLoaded = true;
         } else {
             homeView.innerHTML = '<div class="message error">Could not load any Spotlight movies.</div>';
         }
@@ -317,7 +398,8 @@ async function fetchSpotlightContent() {
 }
 
 async function fetchCategoryContent() {
-    if (categoryMainContent.childElementCount > 1 && currentView === 'categories') return;
+    if (categoriesLoaded) return;
+    if (!requireApiKey(categoryMainContent)) return;
 
     categoryMainContent.innerHTML = '<div class="message animate-pulse">Loading all balanced genre categories...</div>';
     indexContent.innerHTML = '';
@@ -368,6 +450,7 @@ async function fetchCategoryContent() {
         if (contentLoaded) {
             indexContent.innerHTML = indexHtml + indexLinks.join('');
             categoryIndexBar.classList.remove('hidden');
+            categoriesLoaded = true;
             setupIndexObserver();
         } else {
              categoryMainContent.innerHTML = '<div class="message">No trending data could be loaded for any category.</div>';
@@ -474,6 +557,8 @@ async function searchMovies(query) {
     categoryIndexBar.classList.add('hidden'); 
 
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+
+    if (!requireApiKey(searchView)) return;
     
     const searchUrlEn = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=en-US`; 
     const searchUrlHi = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=hi-IN`; 
@@ -560,13 +645,14 @@ function displayMovies(movies, title, container, isSingleSearch = false, customI
         }
         
         const likedClass = isLiked(movie.id) ? 'liked' : '';
+        const safeTitle = escapeHtml(movie.title || 'Untitled');
 
         const posterHtml = `
             <div class="poster-container">
-                <img src="${poster}" alt="${movie.title} poster" 
+                <img src="${poster}" alt="${safeTitle} poster" 
                      onerror="this.onerror=null;this.src='https://placehold.co/400x600/D1D5DB/6B7280?text=POSTER+N/A';" 
                      loading="lazy">
-                <button class="like-btn ${likedClass}" data-id="${movie.id}" title="Add to Watchlist">
+                <button class="like-btn ${likedClass}" data-id="${movie.id}" title="Add to Watchlist" aria-label="Add ${safeTitle} to Watchlist">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                     </svg>
@@ -575,10 +661,10 @@ function displayMovies(movies, title, container, isSingleSearch = false, customI
 
         const infoHtml = `
             <div class="movie-info">
-                <h3 class="movie-title" title="${movie.title}">${movie.title}</h3>
+                <h3 class="movie-title" title="${safeTitle}">${safeTitle}</h3>
                 <p class="movie-release"><span class="label">Released:</span> ${releaseYear}</p>
                 <div class="card-details">
-                    <p class="movie-genre"><span class="label">Genre:</span> ${genreName}</p>
+                    <p class="movie-genre"><span class="label">Genre:</span> ${escapeHtml(genreName)}</p>
                     <div class="rating-box">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="lucide lucide-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                         ${rating}
@@ -589,6 +675,10 @@ function displayMovies(movies, title, container, isSingleSearch = false, customI
         movieCard.innerHTML = posterHtml + infoHtml;
         gridContainer.appendChild(movieCard);
         
+        movieCard.addEventListener('click', () => {
+            openMovieModal(movie.id);
+        });
+
         const likeBtn = movieCard.querySelector('.like-btn');
         if (likeBtn) {
             likeBtn.addEventListener('click', (e) => {
@@ -601,7 +691,7 @@ function displayMovies(movies, title, container, isSingleSearch = false, customI
 
 // --- AUTOSUGGEST LOGIC ---
 async function fetchSuggestions(query) {
-    if (query.length < 3) { closeAllLists(); return; }
+    if (query.length < 3 || !API_KEY) { closeAllLists(); return; }
 
     const searchUrl = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=1`;
     
@@ -662,10 +752,10 @@ function displaySuggestions(suggestions, query) {
 }
 
 function closeAllLists(elmnt) {
-    while (suggestionBox.firstChild) {
+    while (suggestionBox && suggestionBox.firstChild) {
         suggestionBox.removeChild(suggestionBox.firstChild);
     }
-    suggestionBox.style.display = 'none';
+    if (suggestionBox) suggestionBox.style.display = 'none';
     currentFocus = -1;
 }
 
@@ -683,9 +773,11 @@ function removeActive(items) {
 }
 
 // --- EVENT LISTENERS ---
+const debouncedFetchSuggestions = debounce((value) => fetchSuggestions(value), 300);
+
 if (searchInput) {
     searchInput.addEventListener('input', function() {
-        fetchSuggestions(this.value);
+        debouncedFetchSuggestions(this.value);
     });
 
     searchInput.addEventListener('keydown', function(e) {
@@ -719,7 +811,7 @@ if (searchButton) {
 }
 
 document.addEventListener('click', function (e) {
-    if (e.target !== searchInput && e.target !== suggestionBox && !suggestionBox.contains(e.target)) {
+    if (searchInput && suggestionBox && e.target !== searchInput && e.target !== suggestionBox && !suggestionBox.contains(e.target)) {
         closeAllLists();
     }
 });
@@ -769,37 +861,15 @@ if (recognition && micButton) {
 
 // --- INITIALIZATION ---
 async function init() {
-    if (typeof window.getFirebase === 'function') {
-        const fbInstance = window.getFirebase();
-        db = fbInstance.db;
-        userId = fbInstance.userId;
-        appId = fbInstance.appId;
-        firebaseSDK = fbInstance;
+    loadWatchlistFromStorage();
+    if (API_KEY) {
+        await fetchGenreMap();
     }
-    
-    await fetchGenreMap();
-    setupWatchlistListener();
     renderView('home');
 }
 
-window.initAppWatchlist = function() {
-    if (typeof window.getFirebase === 'function') {
-        const fbInstance = window.getFirebase();
-        if (fbInstance.isAuthReady) {
-            db = fbInstance.db;
-            userId = fbInstance.userId;
-            appId = fbInstance.appId;
-            firebaseSDK = fbInstance;
-            init();
-        }
-    } else {
-        init();
-    }
-};
-
-if (typeof window.getFirebase === 'function' && window.getFirebase().isAuthReady) {
-    init();
-} else if (typeof window.getFirebase !== 'function') {
-    // If firebase module is omitted or failed, load immediately
+if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
 }
