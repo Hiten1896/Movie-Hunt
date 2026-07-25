@@ -1,28 +1,12 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Local secrets — never commit your real API key
+config.js
 
-# Dependency directories
-node_modules/
-
-# IDE & Editor settings
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Operating System files
+# OS / editor junk
 .DS_Store
 Thumbs.db
-desktop.ini
+*.swp
+.vscode/
+.idea/
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build output
-dist/
-build/
+# Node (only relevant if you later add tooling e.g. a linter or bundler)
+node_modules/
