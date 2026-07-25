@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Hunt - Balanced Mix</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    
+    <header>
+        <h1>MOVIE HUNT</h1>
+        <div class="search-container">
+            <div class="search-bar-wrapper">
+                <input type="text" id="search-input" placeholder="Search for a movie title...">
+                
+                <button id="mic-button" title="Search by Voice">
+                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                </button>
+                
+                <button id="search-button">
+                    <svg id="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </button>
+            </div>
+            <div id="suggestion-box"></div>
+        </div>
+    </header>
+
+    <nav id="category-nav">
+        <div class="max-w-4xl mx-auto flex justify-center">
+            <button id="home-tab" class="nav-tab active" data-view="home">Home</button>
+            <button id="categories-tab" class="nav-tab" data-view="categories">Categories</button>
+            <button id="watchlist-tab" class="nav-tab" data-view="watchlist">Watchlist</button>
+        </div>
+    </nav>
+
+    <main id="movie-results" class="max-w-7xl mx-auto">
+        
+        <div id="home-view" class="content-view">
+            <!-- Home content loaded here -->
+        </div>
+
+        <div id="categories-view" class="content-view hidden">
+            <!-- New container for sticky index and main content -->
+            <div id="categories-layout" class="categories-layout max-w-7xl mx-auto w-full">
+                <!-- Sticky Index Bar (Shows on all screens, but becomes static on mobile) -->
+                <aside id="category-index-bar" class="sticky-index-bar hidden lg:block">
+                    <div id="index-content">
+                        <!-- Index links loaded dynamically here -->
+                    </div>
+                </aside>
+                
+                <!-- Main Category Content -->
+                <div id="category-main-content" class="category-main-content space-y-12">
+                    <!-- Category grids loaded dynamically here -->
+                </div>
+            </div>
+        </div>
+
+        <div id="search-view" class="content-view hidden">
+        </div>
+        
+        <div id="watchlist-view" class="content-view hidden">
+        </div>
+        
+    </main>
+    
+    <footer>
+        <p>Powered by TMDB API | Designed for Modern Cinematic Experience</p>
+    </footer>
+
+    <!-- Environment Configuration -->
+    <script src="env.js"></script>
+
+    <!-- Firebase SDK & Authentication Module -->
+    <script type="module" src="js/firebase.js"></script>
+
+    <!-- Main Application Logic -->
+    <script src="js/app.js"></script>
+</body>
+</html>
