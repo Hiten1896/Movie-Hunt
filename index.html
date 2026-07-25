@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Movie Hunt — discover trending Hollywood and Bollywood movies side by side, search, and build your own watchlist. Powered by TMDB.">
+    <meta name="description" content="Movie Hunt — discover popular Hollywood and Bollywood movies side by side, search, and build your own watchlist. Powered by TMDB.">
     <meta name="theme-color" content="#8A2BE2">
     <title>Movie Hunt</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E">
+    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://image.tmdb.org">
     <link rel="preconnect" href="https://api.themoviedb.org">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,6 +27,44 @@
         --color-rating-text: #1A1A1A;
     }
 
+    /* Dark Mode Theme Overrides */
+    :root[data-theme="dark"] {
+        --color-bg-primary: #121214;
+        --color-bg-secondary: #1E1E24;
+        --color-accent: #00D1B2;
+        --color-action: #A855F7;
+        --color-text-main: #F3F4F6;
+        --color-text-muted: #9CA3AF;
+        --color-border: #374151;
+        --color-rating-bg: #EAB308;
+        --color-rating-text: #000000;
+    }
+
+    [data-theme="dark"] .suggestion-item:hover, 
+    [data-theme="dark"] .suggestion-item.active,
+    [data-theme="dark"] .index-item:hover,
+    [data-theme="dark"] .nav-tab:hover {
+        background-color: #2D2D36;
+    }
+
+    [data-theme="dark"] .like-btn {
+        background-color: rgba(30, 30, 36, 0.9);
+    }
+
+    [data-theme="dark"] .like-btn:hover {
+        background-color: #2D2D36;
+    }
+
+    [data-theme="dark"] #mic-button:hover {
+        background-color: #2D2D36;
+    }
+
+    [data-theme="dark"] .skeleton-card .skeleton-poster,
+    [data-theme="dark"] .skeleton-card .skeleton-line {
+        background: linear-gradient(90deg, #2a2a32 25%, #353540 37%, #2a2a32 63%);
+        background-size: 400% 100%;
+    }
+
     /* Enable smooth scrolling for jump links */
     html {
         scroll-behavior: smooth;
@@ -41,13 +80,44 @@
         flex-direction: column;
         min-height: 100vh;
         line-height: 1.6;
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     header {
         background-color: var(--color-bg-secondary);
-        padding: 2rem 0;
+        padding: 1.5rem 0 2rem 0;
         text-align: center;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+        position: relative;
+    }
+
+    .header-top-bar {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 2rem 0.5rem 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .theme-toggle-btn {
+        background-color: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-main);
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .theme-toggle-btn:hover {
+        border-color: var(--color-action);
+        transform: scale(1.05);
     }
 
     header h1 {
@@ -64,7 +134,7 @@
         display: flex;
         justify-content: center;
         padding: 20px;
-        margin: 30px auto;
+        margin: 30px auto 10px auto;
         max-width: 700px;
         position: relative; 
     }
@@ -135,7 +205,7 @@
     #search-button svg {
         width: 24px;
         height: 24px;
-        stroke: var(--color-bg-secondary);
+        stroke: #FFFFFF;
     }
 
     #mic-button svg {
@@ -145,7 +215,7 @@
     }
 
     #mic-button.listening svg {
-        stroke: var(--color-bg-secondary);
+        stroke: #FFFFFF;
     }
 
     #search-button:hover {
@@ -204,7 +274,7 @@
         margin-left: 10px;
     }
 
-    /* Tab Navigation Styles - The 'Never' Bar */
+    /* Tab Navigation Styles */
     #category-nav {
         background-color: var(--color-bg-secondary); 
         border-bottom: 2px solid var(--color-border); 
@@ -236,31 +306,29 @@
     .nav-tab.active {
         color: var(--color-action);
         border-bottom: 3px solid var(--color-action);
-        background-color: #FFFFFF;
+        background-color: var(--color-bg-secondary);
     }
 
-
-    /* --- CATEGORY INDEX BAR STYLES --- */
+    /* Category Index Bar */
     .categories-layout {
         display: flex;
         gap: 30px;
-        align-items: flex-start; /* Aligns content and index at the top */
+        align-items: flex-start;
     }
     
     .sticky-index-bar {
         position: sticky;
-        /* Position below the main search/nav bar. Height of header + nav is variable, 80px is a safe minimum top margin */
         top: 80px; 
         width: 250px; 
         flex-shrink: 0;
-        max-height: calc(100vh - 100px); /* Fill the remaining viewport height */
+        max-height: calc(100vh - 100px);
         overflow-y: auto;
         padding: 20px;
         border-radius: 12px;
         background-color: var(--color-bg-secondary);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--color-border);
-        z-index: 5; /* Lower than main nav */
+        z-index: 5;
     }
     
     .category-main-content {
@@ -270,8 +338,8 @@
     
     .index-header {
         font-family: 'Poppins', sans-serif;
-        font-size: 2.5rem; /* Large text size matching H1 aesthetic */
-        color: var(--color-action); /* Use action color for emphasis */
+        font-size: 2.5rem;
+        color: var(--color-action);
         letter-spacing: 2px;
         font-weight: 700;
         margin-bottom: 10px;
@@ -294,18 +362,17 @@
     
     .index-item:hover {
         background-color: #F8F8F8;
-        color: var(--color-accent); /* Use accent for hover to provide contrast */
+        color: var(--color-accent);
         font-weight: 600;
     }
 
     .index-item.active-category {
-        background-color: var(--color-action); /* Use main action color for active state */
-        color: var(--color-bg-secondary);
+        background-color: var(--color-action);
+        color: #FFFFFF;
         font-weight: 700;
         box-shadow: 0 2px 5px rgba(138, 43, 226, 0.3);
     }
     
-    /* Responsive adjustments for the Categories view */
     @media (min-width: 1024px) { 
         .categories-layout {
             flex-direction: row;
@@ -320,26 +387,22 @@
             flex-direction: column;
             gap: 20px;
         }
-        /* Make the index bar static and full width on mobile/tablet */
         .sticky-index-bar {
             position: static; 
             width: 100%;
             max-height: none;
             overflow-y: visible;
         }
-        /* Hide the large 'GENRES' title on mobile index bar */
         .sticky-index-bar .index-header {
              display: none; 
         }
         .section-title {
-             /* Adjust scroll margin for fixed header/nav on top */
              scroll-margin-top: 100px; 
         }
         .category-grid {
             padding: 0;
         }
     }
-
 
     /* Main Content Container Styling */
     #movie-results {
@@ -349,7 +412,6 @@
         width: 100%;
     }
 
-    /* Containers for Home and Categories views */
     .content-view {
         display: flex;
         flex-direction: column;
@@ -391,9 +453,8 @@
         border-bottom: 3px solid var(--color-border);
         padding-bottom: 10px;
         padding-top: 10px;
-        scroll-margin-top: 90px; /* Crucial for smooth scrolling jumps, sits below main nav */
+        scroll-margin-top: 90px;
     }
-
 
     .message {
         width: 100%;
@@ -430,7 +491,7 @@
         flex-direction: column;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         cursor: pointer;
-        position: relative; /* For absolute positioning of the like button */
+        position: relative;
     }
 
     .movie-card:hover {
@@ -553,11 +614,13 @@
         fill: var(--color-rating-text);
     }
 
-    /* --- LOAD MORE BUTTON --- */
+    /* Load More Button Styling */
     .load-more-wrapper {
         display: flex;
         justify-content: center;
-        margin-top: 10px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        width: 100%;
     }
 
     .load-more-btn {
@@ -570,19 +633,23 @@
         font-size: 1rem;
         cursor: pointer;
         transition: all 0.25s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
 
     .load-more-btn:hover:not(:disabled) {
         background-color: var(--color-action);
         color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(138, 43, 226, 0.3);
     }
 
     .load-more-btn:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
+        transform: none;
     }
 
-    /* --- SKELETON CARDS (shown while a section is loading) --- */
+    /* Skeleton Cards (Shimmering Placeholders) */
     .skeleton-card {
         background-color: var(--color-bg-secondary);
         border-radius: 12px;
@@ -618,18 +685,18 @@
         .skeleton-card .skeleton-poster { height: 230px; }
     }
 
-    /* --- TOAST NOTIFICATION --- */
+    /* Toast Notification */
     #toast {
         position: fixed;
         bottom: 24px;
         left: 50%;
         transform: translateX(-50%) translateY(20px);
         background-color: var(--color-text-main);
-        color: #fff;
+        color: var(--color-bg-secondary);
         padding: 12px 24px;
         border-radius: 30px;
         font-size: 0.95rem;
-        font-weight: 500;
+        font-weight: 600;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
         z-index: 100;
         opacity: 0;
@@ -642,12 +709,12 @@
         transform: translateX(-50%) translateY(0);
     }
 
-    /* --- MOVIE DETAIL MODAL --- */
+    /* Movie Detail Modal */
     .modal-overlay {
         position: fixed;
         inset: 0;
         background-color: rgba(0, 0, 0, 0.65);
-        backdrop-filter: blur(3px);
+        backdrop-filter: blur(4px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -792,7 +859,7 @@
     }
 
     .modal-watchlist-btn.liked {
-        background-color: #fff;
+        background-color: var(--color-bg-secondary);
         color: var(--color-action);
     }
 
@@ -874,7 +941,6 @@
 
         .section-title {
             font-size: 1.5rem;
-            /* scroll-margin-top adjusted in max-width: 1023px block for smaller screens */
         }
         
         .nav-tab {
@@ -884,7 +950,7 @@
 
         .search-container {
             padding: 15px;
-            margin: 20px auto;
+            margin: 20px auto 10px auto;
         }
         
         #search-input {
@@ -910,16 +976,22 @@
 <body>
     
     <header>
+        <div class="header-top-bar flex justify-end">
+            <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Dark Mode">
+                <span id="theme-toggle-icon">🌙</span>
+                <span id="theme-toggle-label">Dark Mode</span>
+            </button>
+        </div>
         <h1>MOVIE HUNT</h1>
         <div class="search-container">
             <div class="search-bar-wrapper">
                 <input type="text" id="search-input" placeholder="Search for a movie title...">
                 
                 <button id="mic-button" title="Search by Voice">
-                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                 </button>
                 
-                <button id="search-button">
+                <button id="search-button" aria-label="Perform Search">
                     <svg id="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </button>
             </div>
@@ -942,18 +1014,17 @@
         </div>
 
         <div id="categories-view" class="content-view hidden">
-            <!-- New container for sticky index and main content -->
             <div id="categories-layout" class="categories-layout max-w-7xl mx-auto w-full">
-                <!-- Sticky Index Bar (Shows on all screens, but becomes static on mobile) -->
+                <!-- Sticky Index Bar -->
                 <aside id="category-index-bar" class="sticky-index-bar hidden lg:block">
                     <div id="index-content">
-                        <!-- Index links loaded dynamically here -->
+                        <!-- Index links loaded dynamically -->
                     </div>
                 </aside>
                 
                 <!-- Main Category Content -->
                 <div id="category-main-content" class="category-main-content space-y-12">
-                    <!-- Category grids loaded dynamically here -->
+                    <!-- Category grids loaded dynamically -->
                 </div>
             </div>
         </div>
@@ -967,8 +1038,8 @@
     </main>
 
     <!-- Movie Detail Modal -->
-    <div id="movie-modal" class="modal-overlay">
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
+    <div id="movie-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
+        <div class="modal-card">
             <button id="modal-close" class="modal-close-btn" title="Close" aria-label="Close movie details">&times;</button>
             <div id="modal-body">
                 <!-- Populated by JS -->
@@ -976,7 +1047,8 @@
         </div>
     </div>
 
-    <div id="toast"></div>
+    <!-- Toast Notification with Accessibility live region -->
+    <div id="toast" aria-live="polite" aria-atomic="true"></div>
 
     <footer>
         <p>Powered by TMDB API | Designed for Modern Cinematic Experience</p>
@@ -987,8 +1059,6 @@
 
     <script>
     // --- CONFIGURATION ---
-    // The TMDB API key is loaded from config.js (see config.example.js).
-    // config.js is git-ignored so the real key never gets committed to the repo.
     const API_KEY = (typeof window.TMDB_API_KEY !== 'undefined') ? window.TMDB_API_KEY : '';
     const API_BASE_URL = 'https://api.themoviedb.org/3/';
     const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -1007,42 +1077,47 @@
     const categoriesView = document.getElementById('categories-view');
     const searchView = document.getElementById('search-view');
     const watchlistView = document.getElementById('watchlist-view');
-    // New DOM elements for the sticky index
     const categoryIndexBar = document.getElementById('category-index-bar');
     const categoryMainContent = document.getElementById('category-main-content');
     const indexContent = document.getElementById('index-content');
-    // Modal + toast elements
     const movieModal = document.getElementById('movie-modal');
     const modalBody = document.getElementById('modal-body');
     const modalClose = document.getElementById('modal-close');
     const toastEl = document.getElementById('toast');
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeToggleIcon = document.getElementById('theme-toggle-icon');
+    const themeToggleLabel = document.getElementById('theme-toggle-label');
 
     // --- STATE ---
     let currentFocus = -1; 
     let genreMap = {}; 
-    let currentView = 'home'; // Tracks the active tab
+    let currentView = 'home';
     let homeLoaded = false;
     let categoriesLoaded = false;
     let toastTimer = null;
+    let triggerElement = null; // Accessibility: stores element that opened modal
 
-    // --- CATEGORIES DEFINITION ---
+    // Pagination State
+    let categoryState = {}; // { [genre_id]: { enPage: 1, hiPage: 1, loadedIds: Set } }
+    let searchState = { query: '', enPage: 1, hiPage: 1, loadedIds: new Set() };
+
+    // --- CATEGORIES DEFINITION (Renamed to reflect /discover popularity logic accurately) ---
     const CATEGORIES_CONFIG = [
-        { name: "Trending Action", genre_id: 28 },
-        { name: "Trending Adventure", genre_id: 12 },
-        { name: "Trending Comedy", genre_id: 35 },
-        { name: "Trending Drama", genre_id: 18 }, 
-        { name: "Trending Horror", genre_id: 27 },
-        { name: "Trending Romance", genre_id: 10749 }, 
-        { name: "Trending Thriller", genre_id: 53 },
-        { name: "Trending Crime", genre_id: 80 },
-        { name: "Trending Sci-Fi", genre_id: 878 }, 
-        { name: "Trending Animation", genre_id: 16 },
+        { name: "Popular Action", genre_id: 28 },
+        { name: "Popular Adventure", genre_id: 12 },
+        { name: "Popular Comedy", genre_id: 35 },
+        { name: "Popular Drama", genre_id: 18 }, 
+        { name: "Popular Horror", genre_id: 27 },
+        { name: "Popular Romance", genre_id: 10749 }, 
+        { name: "Popular Thriller", genre_id: 53 },
+        { name: "Popular Crime", genre_id: 80 },
+        { name: "Popular Sci-Fi", genre_id: 878 }, 
+        { name: "Popular Animation", genre_id: 16 },
     ];
 
-    const DISCOVER_BASE_URL = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1`;
+    const DISCOVER_BASE_URL = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false`;
     const MAX_RETRIES = 3;
     
-    // Utility to create URL-safe IDs
     function slugify(text) {
         return text.toLowerCase()
             .trim()
@@ -1051,11 +1126,41 @@
             .replace(/^-+|-+$/g, '');
     }
 
-    // --- WATCHLIST LOGIC (stored locally in the browser via localStorage) ---
-    // No backend/account needed — the watchlist lives on this device only.
+    // --- DARK MODE THEME MANAGEMENT ---
+    function initTheme() {
+        const savedTheme = localStorage.getItem('movieHunt_theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else {
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setTheme(prefersDark ? 'dark' : 'light');
+        }
+    }
+
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (themeToggleIcon) themeToggleIcon.textContent = '☀️';
+            if (themeToggleLabel) themeToggleLabel.textContent = 'Light Mode';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (themeToggleIcon) themeToggleIcon.textContent = '🌙';
+            if (themeToggleLabel) themeToggleLabel.textContent = 'Dark Mode';
+        }
+        localStorage.setItem('movieHunt_theme', theme);
+    }
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+    }
+
+    // --- WATCHLIST LOGIC ---
     const WATCHLIST_STORAGE_KEY = 'movieHunt_watchlist_v1';
-    let currentWatchlist = new Set();  // Set of movie IDs, for fast "is this liked?" lookups
-    let watchlistData = {};            // { [movieId]: movieObject } — full data used to render the Watchlist tab
+    let currentWatchlist = new Set();
+    let watchlistData = {};
 
     function loadWatchlistFromStorage() {
         try {
@@ -1073,11 +1178,10 @@
             localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlistData));
         } catch (error) {
             console.error('Error saving watchlist to localStorage:', error);
-            showToast('Could not save — storage may be full or disabled.');
+            showToast('Could not save — storage full or disabled.');
         }
     }
 
-    // Updates every heart/like button on screen (grid cards + modal) to match current state
     function updateLikeButtons() {
         document.querySelectorAll('.like-btn').forEach(likeBtn => {
             const movieId = parseInt(likeBtn.dataset.id);
@@ -1106,7 +1210,6 @@
                 poster_path: movie.poster_path,
                 release_date: movie.release_date,
                 vote_average: movie.vote_average,
-                // Normalise genres to a simple array of IDs, whichever shape the source object used
                 genre_ids: movie.genre_ids || (movie.genres ? movie.genres.map(g => g.id) : [])
             };
             showToast('Added to Watchlist');
@@ -1135,16 +1238,21 @@
         }
     }
 
-
-    // --- API UTILITY FUNCTIONS ---
+    // --- API UTILITY FUNCTIONS (WITH HTTP 429 RATE LIMIT DETECTION) ---
 
     async function fetchWithBackoff(url) {
         for (let i = 0; i < MAX_RETRIES; i++) {
             try {
                 const response = await fetch(url);
+                if (response.status === 429) {
+                    throw new Error('HTTP_429_RATE_LIMIT');
+                }
                 if (response.ok) return response;
                 if (i < MAX_RETRIES - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
             } catch (error) {
+                if (error.message === 'HTTP_429_RATE_LIMIT') {
+                    throw error; // Throw rate limit error immediately
+                }
                 console.error(`Fetch attempt ${i + 1} failed for ${url}:`, error);
                 if (i < MAX_RETRIES - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
             }
@@ -1169,19 +1277,16 @@
     }
 
     async function fetchMovieDetailsByID(tmdbID) {
-        // Fetch details in English (default) to get primary info
         const url = `${API_BASE_URL}movie/${tmdbID}?api_key=${API_KEY}`; 
         try {
             const response = await fetchWithBackoff(url);
-            const data = await response.json();
-            return data; 
+            return await response.json(); 
         } catch (error) {
             console.error(`Error fetching details for ID ${tmdbID}:`, error);
             return null;
         }
     }
 
-    // Used by the detail modal — pulls in cast + trailer info alongside the core details in one call
     async function fetchMovieFullDetails(tmdbID) {
         const url = `${API_BASE_URL}movie/${tmdbID}?api_key=${API_KEY}&append_to_response=credits,videos`;
         try {
@@ -1193,9 +1298,8 @@
         }
     }
 
-    // --- UI HELPERS ---
+    // --- UI HELPERS & SKELETON LOADERS ---
 
-    // Shows a friendly setup message instead of a confusing failed-fetch error when config.js is missing
     function requireApiKey(container) {
         if (API_KEY) return true;
         container.innerHTML = `
@@ -1239,28 +1343,65 @@
         return trailer ? trailer.key : null;
     }
 
-    // --- MOVIE DETAIL MODAL ---
+    function renderSkeletonCards(container, count = 4) {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('skeleton-wrapper-temp', 'category-grid');
+        for (let i = 0; i < count; i++) {
+            const card = document.createElement('div');
+            card.classList.add('skeleton-card');
+            card.innerHTML = `
+                <div class="skeleton-poster"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+            `;
+            wrapper.appendChild(card);
+        }
+        container.appendChild(wrapper);
+        return wrapper;
+    }
+
+    // --- ACCESSIBLE MOVIE DETAIL MODAL WITH FOCUS TRAP ---
 
     async function openMovieModal(movieId) {
+        triggerElement = document.activeElement;
         movieModal.classList.add('open');
         document.body.style.overflow = 'hidden';
-        modalBody.innerHTML = '<div class="message animate-pulse" style="box-shadow:none; margin:60px auto;">Loading details...</div>';
+        
+        modalBody.innerHTML = `
+            <div class="modal-header">
+                <h2 id="modal-title-text" class="modal-title">Loading details...</h2>
+            </div>
+            <div class="message animate-pulse" style="box-shadow:none; margin:30px auto;">Fetching movie details...</div>
+        `;
 
         const movie = await fetchMovieFullDetails(movieId);
 
-        // Guard against the user closing the modal before the fetch resolved
         if (!movieModal.classList.contains('open')) return;
 
         if (!movie || movie.success === false) {
-            modalBody.innerHTML = '<div class="message error" style="box-shadow:none; margin:60px auto;">Could not load movie details. Please try again.</div>';
+            modalBody.innerHTML = `
+                <div class="modal-header">
+                    <h2 id="modal-title-text" class="modal-title">Error</h2>
+                </div>
+                <div class="message error" style="box-shadow:none; margin:30px auto;">Could not load movie details. Please try again.</div>
+            `;
             return;
         }
         renderModalContent(movie);
+
+        // Move focus into modal
+        setTimeout(() => {
+            const focusable = movieModal.querySelectorAll('button, a, input, [tabindex="0"]');
+            if (focusable.length > 0) focusable[0].focus();
+        }, 50);
     }
 
     function closeMovieModal() {
         movieModal.classList.remove('open');
         document.body.style.overflow = '';
+        if (triggerElement && typeof triggerElement.focus === 'function') {
+            triggerElement.focus();
+        }
     }
 
     function renderModalContent(movie) {
@@ -1324,16 +1465,35 @@
     movieModal.addEventListener('click', (e) => {
         if (e.target === movieModal) closeMovieModal();
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && movieModal.classList.contains('open')) closeMovieModal();
+    
+    // Focus Trap Keyboard Listener
+    movieModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && movieModal.classList.contains('open')) {
+            closeMovieModal();
+            return;
+        }
+        if (e.key === 'Tab' && movieModal.classList.contains('open')) {
+            const focusables = Array.from(movieModal.querySelectorAll('button, a, input, [tabindex="0"]')).filter(el => !el.disabled && el.offsetParent !== null);
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        }
     });
 
     /**
-     * Interleaves two arrays of movies (e.g., Hollywood and Bollywood) in a strict 1:1 ratio.
-     * @param {Array} listA - The first list of movies (e.g., English)
-     * @param {Array} listB - The second list of movies (e.g., Hindi)
-     * @param {number} limit - The maximum number of movies to return
-     * @returns {Array} - The strictly interleaved list (A, B, A, B, ...)
+     * Interleaves two arrays of movies in a strict 1:1 ratio.
      */
     function interleaveMovies(listA, listB, limit) {
         const mixedMovies = [];
@@ -1341,7 +1501,6 @@
         let indexB = 0;
 
         while (mixedMovies.length < limit) {
-            // Try to add from List A
             if (indexA < listA.length) {
                 const movieA = listA[indexA++];
                 if (!mixedMovies.some(m => m.id === movieA.id)) {
@@ -1349,7 +1508,6 @@
                 }
             }
 
-            // Try to add from List B
             if (mixedMovies.length < limit && indexB < listB.length) {
                 const movieB = listB[indexB++];
                 if (!mixedMovies.some(m => m.id === movieB.id)) {
@@ -1357,7 +1515,6 @@
                 }
             }
             
-            // If neither list contributed a new unique movie in this round, stop
             if (indexA >= listA.length && indexB >= listB.length) {
                 break;
             }
@@ -1371,13 +1528,11 @@
         if (homeLoaded) return;
         if (!requireApiKey(homeView)) return;
 
-        // Message reflects the balance but the title will be simplified
         homeView.innerHTML = '<div class="message animate-pulse">Building the 50/50 Mixed Spotlight...</div>';
         
         try {
-            // Fetch top 10 popular English and top 10 Hindi movies
             const fetchUrlEn = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_original_language=en&vote_count.gte=100`;
-            const fetchUrlHi = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_original_language=hi&vote_count.gte=50`; // Lower vote count threshold for Hindi to get more results
+            const fetchUrlHi = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_original_language=hi&vote_count.gte=50`;
             
             const [enData, hiData] = await Promise.all([
                 fetchWithBackoff(fetchUrlEn).then(r => r.json()),
@@ -1387,13 +1542,10 @@
             const englishMovies = enData.results ? enData.results.slice(0, 10) : [];
             const hindiMovies = hiData.results ? hiData.results.slice(0, 10) : [];
             
-            // Enforce strict 50/50 interleaving (Max 10 movies total: 5 English, 5 Hindi)
             const spotlightMovies = interleaveMovies(hindiMovies, englishMovies, 10); 
-            // NOTE: Interleaving Hindi first ensures the first movie is likely Bollywood, catering to the region.
             
             homeView.innerHTML = '';
             if (spotlightMovies.length > 0) {
-                // CHANGED: Restored the title to the original simple name
                 displayMovies(spotlightMovies, "Movies of the Day", homeView);
                 homeLoaded = true;
             } else {
@@ -1402,7 +1554,11 @@
 
         } catch (error) {
             console.error('An error occurred during Spotlight load:', error);
-            homeView.innerHTML = '<div class="message error">An error occurred while fetching the Spotlight.</div>';
+            if (error.message === 'HTTP_429_RATE_LIMIT') {
+                homeView.innerHTML = '<div class="message error">Too many requests to TMDB. Please wait a moment and try again.</div>';
+            } else {
+                homeView.innerHTML = '<div class="message error">An error occurred while fetching the Spotlight.</div>';
+            }
         }
     }
 
@@ -1411,14 +1567,12 @@
         if (!requireApiKey(categoryMainContent)) return;
 
         categoryMainContent.innerHTML = '<div class="message animate-pulse">Loading all balanced genre categories...</div>';
-        indexContent.innerHTML = ''; // Clear index bar content
+        indexContent.innerHTML = '';
 
         try {
             const fetchPromises = CATEGORIES_CONFIG.map(category => {
-                // Fetch 4 top English for this genre
-                const enUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=en&vote_count.gte=100`;
-                // Fetch 4 top Hindi for this genre
-                const hiUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=hi&vote_count.gte=50`;
+                const enUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=en&vote_count.gte=100&page=1`;
+                const hiUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=hi&vote_count.gte=50&page=1`;
 
                 return Promise.all([
                     fetchWithBackoff(enUrl).then(r => r.json()),
@@ -1427,16 +1581,16 @@
                     const englishMovies = enData.results ? enData.results.slice(0, 4) : [];
                     const hindiMovies = hiData.results ? hiData.results.slice(0, 4) : [];
 
-                    // Enforce strict 50/50 interleaving (Max 8 movies: 4 Hindi, 4 English)
                     const mixedMovies = interleaveMovies(hindiMovies, englishMovies, 8);
                     
                     return {
                         name: category.name, 
+                        genre_id: category.genre_id,
                         movies: mixedMovies 
                     };
                 }).catch(error => {
                     console.error(`Error fetching balanced content for ${category.name}:`, error);
-                    return { name: category.name, movies: [], error: true };
+                    return { name: category.name, genre_id: category.genre_id, movies: [], error: true };
                 });
             });
             
@@ -1444,10 +1598,8 @@
             
             categoryMainContent.innerHTML = ''; 
             
-            // 1. Build the Sticky Index HTML
             let indexHtml = `<div class="index-header">GENRES</div>`;
             const indexLinks = [];
-            
             let contentLoaded = false;
             
             allCategoryData.forEach(category => {
@@ -1455,10 +1607,34 @@
                 
                 if (category.movies.length > 0) {
                     indexLinks.push(`<a href="#section-${id}" class="index-item">${category.name}</a>`);
-                    // Use a new title to reflect the mix
                     const categoryTitle = `${category.name} (50/50 Mix)`; 
                     displayMovies(category.movies, categoryTitle, categoryMainContent, false, id);
                     contentLoaded = true;
+
+                    // Initialize category pagination state
+                    const loadedSet = new Set(category.movies.map(m => m.id));
+                    categoryState[category.genre_id] = {
+                        name: category.name,
+                        idSlug: id,
+                        title: categoryTitle,
+                        enPage: 1,
+                        hiPage: 1,
+                        loadedIds: loadedSet
+                    };
+
+                    // Add "Load More" button under category section
+                    const gridContainer = categoryMainContent.querySelector(`.grid-${id}`);
+                    if (gridContainer) {
+                        const loadMoreWrap = document.createElement('div');
+                        loadMoreWrap.classList.add('load-more-wrapper');
+                        loadMoreWrap.id = `load-more-wrap-${id}`;
+                        loadMoreWrap.innerHTML = `<button class="load-more-btn" data-genre-id="${category.genre_id}">Load More ${category.name}</button>`;
+                        gridContainer.after(loadMoreWrap);
+
+                        loadMoreWrap.querySelector('button').addEventListener('click', () => {
+                            loadMoreCategoryPage(category.genre_id);
+                        });
+                    }
                 } 
             });
 
@@ -1466,23 +1642,78 @@
                 indexContent.innerHTML = indexHtml + indexLinks.join('');
                 categoryIndexBar.classList.remove('hidden');
                 categoriesLoaded = true;
-                
-                // 2. Set up Intersection Observer for active link highlighting
                 setupIndexObserver();
-
             } else {
                  categoryMainContent.innerHTML = '<div class="message">No trending data could be loaded for any category.</div>';
-                 categoryIndexBar.classList.add('hidden'); // Hide index bar if no content
+                 categoryIndexBar.classList.add('hidden');
             }
             
         } catch (error) {
             console.error('An error occurred during category load:', error);
-            categoryMainContent.innerHTML = '<div class="message error">An unexpected error occurred while fetching all categories.</div>';
+            if (error.message === 'HTTP_429_RATE_LIMIT') {
+                categoryMainContent.innerHTML = '<div class="message error">Too many requests to TMDB. Please wait a moment and try again.</div>';
+            } else {
+                categoryMainContent.innerHTML = '<div class="message error">An unexpected error occurred while fetching categories.</div>';
+            }
             categoryIndexBar.classList.add('hidden');
         }
     }
 
-    // Function to set up the Intersection Observer for active link highlighting
+    async function loadMoreCategoryPage(genreId) {
+        const state = categoryState[genreId];
+        if (!state) return;
+
+        const gridContainer = categoryMainContent.querySelector(`.grid-${state.idSlug}`);
+        const loadMoreWrap = document.getElementById(`load-more-wrap-${state.idSlug}`);
+        const btn = loadMoreWrap ? loadMoreWrap.querySelector('button') : null;
+
+        if (!gridContainer || !btn) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+
+        // Render skeleton loaders inside grid
+        const skeletonWrapper = renderSkeletonCards(gridContainer, 4);
+
+        state.enPage += 1;
+        state.hiPage += 1;
+
+        const enUrl = `${DISCOVER_BASE_URL}&with_genres=${genreId}&with_original_language=en&vote_count.gte=100&page=${state.enPage}`;
+        const hiUrl = `${DISCOVER_BASE_URL}&with_genres=${genreId}&with_original_language=hi&vote_count.gte=50&page=${state.hiPage}`;
+
+        try {
+            const [enData, hiData] = await Promise.all([
+                fetchWithBackoff(enUrl).then(r => r.json()).catch(() => ({ results: [] })),
+                fetchWithBackoff(hiUrl).then(r => r.json()).catch(() => ({ results: [] }))
+            ]);
+
+            const englishMovies = enData.results || [];
+            const hindiMovies = hiData.results || [];
+
+            const newMixed = interleaveMovies(hindiMovies, englishMovies, 8);
+            const freshMovies = newMixed.filter(m => !state.loadedIds.has(m.id));
+
+            // Remove skeleton loader
+            skeletonWrapper.remove();
+
+            if (freshMovies.length > 0) {
+                freshMovies.forEach(m => state.loadedIds.add(m.id));
+                appendMoviesToGrid(freshMovies, gridContainer);
+                btn.disabled = false;
+                btn.textContent = `Load More ${state.name}`;
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'No More Movies Available';
+            }
+
+        } catch (error) {
+            console.error(`Error loading page for category ${genreId}:`, error);
+            skeletonWrapper.remove();
+            btn.disabled = false;
+            btn.textContent = error.message === 'HTTP_429_RATE_LIMIT' ? 'Rate limited — Retry in a moment' : 'Try Again';
+        }
+    }
+
     function setupIndexObserver() {
         const observerOptions = {
             root: null,
@@ -1529,7 +1760,8 @@
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        const activeTabBtn = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeTabBtn) activeTabBtn.classList.add('active');
 
         homeView.classList.add('hidden');
         categoriesView.classList.add('hidden');
@@ -1557,13 +1789,12 @@
         }
     }
 
-    // --- NAVIGATION HANDLERS ---
     homeTab.addEventListener('click', () => renderView('home'));
     categoriesTab.addEventListener('click', () => renderView('categories'));
     watchlistTab.addEventListener('click', () => renderView('watchlist'));
 
 
-    // --- GENERAL SEARCH LOGIC (Updated to ensure mix) ---
+    // --- GENERAL SEARCH LOGIC WITH PAGINATION ---
 
     async function searchMovies(query) {
         closeAllLists();
@@ -1572,17 +1803,28 @@
         categoriesView.classList.add('hidden');
         watchlistView.classList.add('hidden');
         searchView.classList.remove('hidden');
-        searchView.innerHTML = '<div class="message animate-pulse">Searching the archives (English & Hindi)...</div>';
+        searchView.innerHTML = '';
         categoryIndexBar.classList.add('hidden'); 
 
         document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
 
         if (!requireApiKey(searchView)) return;
-        
-        // 1. Fetch English language preference results
-        const searchUrlEn = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=en-US`; 
-        // 2. Fetch Hindi language preference results
-        const searchUrlHi = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=hi-IN`; 
+
+        searchState = {
+            query: query,
+            enPage: 1,
+            hiPage: 1,
+            loadedIds: new Set()
+        };
+
+        const titleSlug = 'search-results';
+        displayMovies([], `Search Results for "${query}" (50/50 Mix)`, searchView, true, titleSlug);
+
+        const gridContainer = searchView.querySelector(`.grid-${titleSlug}`);
+        const skeletonWrapper = renderSkeletonCards(gridContainer, 6);
+
+        const searchUrlEn = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`; 
+        const searchUrlHi = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=hi-IN&page=1`; 
 
         try {
             const [enResponse, hiResponse] = await Promise.all([
@@ -1593,12 +1835,11 @@
             const enResults = enResponse.results ? enResponse.results.slice(0, 5) : [];
             const hiResults = hiResponse.results ? hiResponse.results.slice(0, 5) : [];
             
-            // Interleave results to guarantee a mix (Max 10 results: 5 from each)
             const combinedResults = interleaveMovies(hiResults, enResults, 10); 
 
-            if (combinedResults.length > 0) {
-                searchView.innerHTML = '<div class="message animate-pulse">Fetching detailed movie information...</div>';
+            skeletonWrapper.remove();
 
+            if (combinedResults.length > 0) {
                 const detailPromises = combinedResults
                     .filter(movie => movie.id)
                     .map(movie => fetchMovieDetailsByID(movie.id));
@@ -1606,10 +1847,19 @@
                 const detailedMovies = (await Promise.all(detailPromises)).filter(data => data !== null);
 
                 if (detailedMovies.length > 0) {
-                    searchView.innerHTML = ''; 
-                    displayMovies(detailedMovies, `Search Results for "${query}" (Balanced Mix)`, searchView, true); 
+                    detailedMovies.forEach(m => searchState.loadedIds.add(m.id));
+                    appendMoviesToGrid(detailedMovies, gridContainer);
+
+                    // Add "Load More" button for search
+                    const loadMoreWrap = document.createElement('div');
+                    loadMoreWrap.classList.add('load-more-wrapper');
+                    loadMoreWrap.id = 'load-more-wrap-search';
+                    loadMoreWrap.innerHTML = `<button class="load-more-btn" id="search-load-more-btn">Load More Results</button>`;
+                    gridContainer.after(loadMoreWrap);
+
+                    loadMoreWrap.querySelector('button').addEventListener('click', loadMoreSearchResults);
                 } else {
-                     searchView.innerHTML = `<div class="message error">No detailed results found for "${query}".</div>`;
+                    searchView.innerHTML = `<div class="message error">No detailed results found for "${query}".</div>`;
                 }
 
             } else {
@@ -1617,8 +1867,71 @@
             }
 
         } catch (error) {
-            console.error('Error fetching data:', error);
-            searchView.innerHTML = '<div class="message error">An unexpected error occurred. Check your API key and network connection.</div>';
+            console.error('Error fetching search data:', error);
+            skeletonWrapper.remove();
+            if (error.message === 'HTTP_429_RATE_LIMIT') {
+                searchView.innerHTML = '<div class="message error">Too many requests to TMDB. Please wait a moment and try again.</div>';
+            } else {
+                searchView.innerHTML = '<div class="message error">An unexpected error occurred. Check your network connection.</div>';
+            }
+        }
+    }
+
+    async function loadMoreSearchResults() {
+        const loadMoreWrap = document.getElementById('load-more-wrap-search');
+        const btn = loadMoreWrap ? loadMoreWrap.querySelector('button') : null;
+        const gridContainer = searchView.querySelector('.category-grid');
+
+        if (!gridContainer || !btn || !searchState.query) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+
+        const skeletonWrapper = renderSkeletonCards(gridContainer, 4);
+
+        searchState.enPage += 1;
+        searchState.hiPage += 1;
+
+        const searchUrlEn = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchState.query)}&language=en-US&page=${searchState.enPage}`;
+        const searchUrlHi = `${API_BASE_URL}search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchState.query)}&language=hi-IN&page=${searchState.hiPage}`;
+
+        try {
+            const [enResponse, hiResponse] = await Promise.all([
+                fetchWithBackoff(searchUrlEn).then(r => r.json()).catch(() => ({ results: [] })),
+                fetchWithBackoff(searchUrlHi).then(r => r.json()).catch(() => ({ results: [] }))
+            ]);
+
+            const enResults = enResponse.results || [];
+            const hiResults = hiResponse.results || [];
+
+            const combined = interleaveMovies(hiResults, enResults, 10);
+            const freshCombined = combined.filter(m => !searchState.loadedIds.has(m.id));
+
+            skeletonWrapper.remove();
+
+            if (freshCombined.length > 0) {
+                const detailPromises = freshCombined.map(movie => fetchMovieDetailsByID(movie.id));
+                const detailedMovies = (await Promise.all(detailPromises)).filter(data => data !== null);
+
+                if (detailedMovies.length > 0) {
+                    detailedMovies.forEach(m => searchState.loadedIds.add(m.id));
+                    appendMoviesToGrid(detailedMovies, gridContainer);
+                    btn.disabled = false;
+                    btn.textContent = 'Load More Results';
+                } else {
+                    btn.disabled = true;
+                    btn.textContent = 'No More Results';
+                }
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'No More Results';
+            }
+
+        } catch (error) {
+            console.error('Error loading more search results:', error);
+            skeletonWrapper.remove();
+            btn.disabled = false;
+            btn.textContent = error.message === 'HTTP_429_RATE_LIMIT' ? 'Rate limited — Retry in a moment' : 'Try Again';
         }
     }
 
@@ -1646,10 +1959,17 @@
         } else {
             if (isSingleSearch) gridContainer.innerHTML = '';
         }
-        
+
+        if (movies && movies.length > 0) {
+            appendMoviesToGrid(movies, gridContainer);
+        }
+    }
+
+    function appendMoviesToGrid(movies, gridContainer) {
         movies.forEach(movie => {
             const movieCard = document.createElement('div');
             movieCard.classList.add('movie-card');
+            movieCard.setAttribute('tabindex', '0'); // Accessible keyboard focus
 
             const posterPath = movie.poster_path;
             const poster = posterPath
@@ -1697,9 +2017,14 @@
             movieCard.innerHTML = posterHtml + infoHtml;
             gridContainer.appendChild(movieCard);
 
-            // Clicking anywhere on the card (except the like button) opens the detail modal
             movieCard.addEventListener('click', () => {
                 openMovieModal(movie.id);
+            });
+
+            movieCard.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    openMovieModal(movie.id);
+                }
             });
 
             const likeBtn = movieCard.querySelector('.like-btn');
@@ -1709,7 +2034,6 @@
             });
         });
     }
-
 
     // --- AUTOSUGGEST LOGIC ---
     async function fetchSuggestions(query) {
@@ -1750,9 +2074,9 @@
                 const pre = titleText.substring(0, startIndex);
                 const match = titleText.substring(startIndex, endIndex);
                 const post = titleText.substring(endIndex);
-                highlightedTitle = `${pre}<span class="highlight">${match}</span>${post}`;
+                highlightedTitle = `${escapeHtml(pre)}<span class="highlight">${escapeHtml(match)}</span>${escapeHtml(post)}`;
             } else {
-                highlightedTitle = titleText;
+                highlightedTitle = escapeHtml(titleText);
             }
 
             const releaseYear = movie.release_date ? `(${movie.release_date.split('-')[0]})` : '';
@@ -1772,7 +2096,6 @@
             suggestionBox.style.display = 'block';
         }
     }
-
 
     function closeAllLists(elmnt) {
         while (suggestionBox.firstChild) {
@@ -1856,7 +2179,6 @@
                     micButton.classList.add('listening');
                 } catch (error) {
                     console.error('Speech recognition error:', error);
-                    // Use a custom message box instead of alert
                     micButton.classList.remove('listening');
                 }
             }
@@ -1881,10 +2203,17 @@
         console.warn('Speech Recognition API not supported in this browser.');
     }
 
+    // --- PWA SERVICE WORKER REGISTRATION ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service Worker registration failed:', err));
+        });
+    }
 
     // --- INITIALIZATION ---
 
     async function init() {
+        initTheme();
         loadWatchlistFromStorage();
         if (API_KEY) {
             await fetchGenreMap();
