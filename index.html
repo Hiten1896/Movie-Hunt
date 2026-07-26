@@ -447,12 +447,11 @@
     .section-title {
         font-size: 2rem;
         color: var(--color-action);
-        margin: 0 0 20px 0;
+        margin: 40px 0 20px 0;
         font-weight: 700;
         text-align: center;
         border-bottom: 3px solid var(--color-border);
         padding-bottom: 10px;
-        padding-top: 10px;
         scroll-margin-top: 90px;
     }
 
@@ -508,7 +507,7 @@
 
     .movie-card img {
         width: 100%;
-        height: 360px;
+        aspect-ratio: 2 / 3;
         object-fit: cover;
         border-bottom: 2px solid var(--color-border);
     }
@@ -968,7 +967,7 @@
         }
 
         .movie-card img {
-            height: 230px;
+            aspect-ratio: 2 / 3;
         }
     }
     </style>
@@ -1103,16 +1102,16 @@
 
     // --- CATEGORIES DEFINITION (Renamed to reflect /discover popularity logic accurately) ---
     const CATEGORIES_CONFIG = [
-        { name: "Popular Action", genre_id: 28 },
-        { name: "Popular Adventure", genre_id: 12 },
-        { name: "Popular Comedy", genre_id: 35 },
-        { name: "Popular Drama", genre_id: 18 }, 
-        { name: "Popular Horror", genre_id: 27 },
-        { name: "Popular Romance", genre_id: 10749 }, 
-        { name: "Popular Thriller", genre_id: 53 },
-        { name: "Popular Crime", genre_id: 80 },
-        { name: "Popular Sci-Fi", genre_id: 878 }, 
-        { name: "Popular Animation", genre_id: 16 },
+        { name: "Action", genre_id: 28 },
+        { name: "Adventure", genre_id: 12 },
+        { name: "Comedy", genre_id: 35 },
+        { name: "Drama", genre_id: 18 }, 
+        { name: "Horror", genre_id: 27 },
+        { name: "Romance", genre_id: 10749 }, 
+        { name: "Thriller", genre_id: 53 },
+        { name: "Crime", genre_id: 80 },
+        { name: "Sci-Fi", genre_id: 878 }, 
+        { name: "Animation", genre_id: 16 },
     ];
 
     const DISCOVER_BASE_URL = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false`;
@@ -1238,21 +1237,22 @@
         }
     }
 
-    // --- API UTILITY FUNCTIONS (WITH HTTP 429 RATE LIMIT DETECTION) ---
+    // --- API UTILITY FUNCTIONS (WITH HTTP 429 RATE LIMIT RETRY) ---
 
     async function fetchWithBackoff(url) {
         for (let i = 0; i < MAX_RETRIES; i++) {
             try {
                 const response = await fetch(url);
                 if (response.status === 429) {
-                    throw new Error('HTTP_429_RATE_LIMIT');
+                    // Wait longer on rate limit, then retry
+                    const waitTime = Math.pow(2, i + 1) * 1000; // 2s, 4s, 8s
+                    console.warn(`Rate limited (429). Waiting ${waitTime}ms before retry ${i + 1}...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
                 }
                 if (response.ok) return response;
                 if (i < MAX_RETRIES - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
             } catch (error) {
-                if (error.message === 'HTTP_429_RATE_LIMIT') {
-                    throw error; // Throw rate limit error immediately
-                }
                 console.error(`Fetch attempt ${i + 1} failed for ${url}:`, error);
                 if (i < MAX_RETRIES - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
             }
@@ -1360,6 +1360,20 @@
         return wrapper;
     }
 
+    function openTrailerModal(key) {
+        const trailerModal = document.getElementById('trailer-modal');
+        const trailerIframe = document.getElementById('trailer-iframe');
+        trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`;
+        trailerModal.classList.add('open');
+    }
+
+    function closeTrailerModal() {
+        const trailerModal = document.getElementById('trailer-modal');
+        const trailerIframe = document.getElementById('trailer-iframe');
+        trailerIframe.src = '';
+        trailerModal.classList.remove('open');
+    }
+
     // --- ACCESSIBLE MOVIE DETAIL MODAL WITH FOCUS TRAP ---
 
     async function openMovieModal(movieId) {
@@ -1435,10 +1449,20 @@
                     <p class="modal-overview">${movie.overview ? escapeHtml(movie.overview) : 'No overview available.'}</p>
                     <div class="modal-actions">
                         <button id="modal-watchlist-btn" class="modal-watchlist-btn ${liked ? 'liked' : ''}" data-id="${movie.id}">${liked ? '✓ In Watchlist' : '+ Add to Watchlist'}</button>
-                        ${trailerKey ? `<a class="modal-trailer-btn" href="https://www.youtube.com/watch?v=${trailerKey}" target="_blank" rel="noopener noreferrer">▶ Watch Trailer</a>` : ''}
+                        ${trailerKey ? `<button class="modal-trailer-btn" onclick="openTrailerModal('${trailerKey}')">▶ Watch Trailer</button>` : ''}
                     </div>
                 </div>
             </div>
+            
+            <div id="trailer-modal" class="modal-overlay" style="z-index: 100;">
+                <div class="modal-card" style="max-width: 800px; padding: 0;">
+                    <button class="modal-close-btn" onclick="closeTrailerModal()">&times;</button>
+                    <div id="trailer-body" style="padding-top: 56.25%; position: relative;">
+                        <iframe id="trailer-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
             ${cast.length > 0 ? `
             <div class="modal-cast-section">
                 <div class="modal-cast-title">Top Cast</div>
@@ -1524,26 +1548,29 @@
 
     // --- CONTENT FETCHERS ---
 
-    async function fetchSpotlightContent() {
-        if (homeLoaded) return;
+    async function fetchSpotlightContent(onlyRecent = false) {
+        if (homeLoaded && !onlyRecent) return;
         if (!requireApiKey(homeView)) return;
 
         homeView.innerHTML = '<div class="message animate-pulse">Building the 50/50 Mixed Spotlight...</div>';
-        
-        try {
-            const fetchUrlEn = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_original_language=en&vote_count.gte=100`;
-            const fetchUrlHi = `${API_BASE_URL}discover/movie?api_key=${API_KEY}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_original_language=hi&vote_count.gte=50`;
-            
-            const [enData, hiData] = await Promise.all([
-                fetchWithBackoff(fetchUrlEn).then(r => r.json()),
-                fetchWithBackoff(fetchUrlHi).then(r => r.json()),
-            ]);
 
-            const englishMovies = enData.results ? enData.results.slice(0, 10) : [];
-            const hindiMovies = hiData.results ? hiData.results.slice(0, 10) : [];
-            
-            const spotlightMovies = interleaveMovies(hindiMovies, englishMovies, 10); 
-            
+        try {
+            const trendingUrl = `${API_BASE_URL}trending/movie/day?api_key=${API_KEY}`;
+            const data = await fetchWithBackoff(trendingUrl).then(r => r.json());
+            const results = data.results || [];
+
+            // Client-side filtering
+            let filteredResults = results;
+            if (onlyRecent) {
+                const cutoff = new Date('2025-01-01');
+                filteredResults = filteredResults.filter(m => m.release_date && new Date(m.release_date) >= cutoff);
+            }
+
+            const englishMovies = filteredResults.filter(m => m.original_language === 'en').slice(0, 12);
+            const hindiMovies = filteredResults.filter(m => m.original_language === 'hi').slice(0, 12);
+
+            const spotlightMovies = interleaveMovies(hindiMovies, englishMovies, 12);
+
             homeView.innerHTML = '';
             if (spotlightMovies.length > 0) {
                 displayMovies(spotlightMovies, "Movies of the Day", homeView);
@@ -1570,31 +1597,29 @@
         indexContent.innerHTML = '';
 
         try {
-            const fetchPromises = CATEGORIES_CONFIG.map(category => {
-                const enUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=en&vote_count.gte=100&page=1`;
-                const hiUrl = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&with_original_language=hi&vote_count.gte=50&page=1`;
+            const allCategoryData = [];
+            for (let i = 0; i < CATEGORIES_CONFIG.length; i++) {
+                const category = CATEGORIES_CONFIG[i];
+                const url = `${DISCOVER_BASE_URL}&with_genres=${category.genre_id}&primary_release_date.gte=2025-01-01&page=1`;
 
-                return Promise.all([
-                    fetchWithBackoff(enUrl).then(r => r.json()),
-                    fetchWithBackoff(hiUrl).then(r => r.json())
-                ]).then(([enData, hiData]) => {
-                    const englishMovies = enData.results ? enData.results.slice(0, 4) : [];
-                    const hindiMovies = hiData.results ? hiData.results.slice(0, 4) : [];
-
-                    const mixedMovies = interleaveMovies(hindiMovies, englishMovies, 8);
-                    
-                    return {
-                        name: category.name, 
+                try {
+                    const response = await fetchWithBackoff(url);
+                    const data = await response.json();
+                    allCategoryData.push({
+                        name: category.name,
                         genre_id: category.genre_id,
-                        movies: mixedMovies 
-                    };
-                }).catch(error => {
-                    console.error(`Error fetching balanced content for ${category.name}:`, error);
-                    return { name: category.name, genre_id: category.genre_id, movies: [], error: true };
-                });
-            });
-            
-            const allCategoryData = await Promise.all(fetchPromises);
+                        movies: data.results ? data.results.slice(0, 12) : []
+                    });
+                } catch (error) {
+                    console.error(`Error fetching content for ${category.name}:`, error);
+                    allCategoryData.push({ name: category.name, genre_id: category.genre_id, movies: [], error: true });
+                }
+
+                // Small delay between requests to avoid rate limiting
+                if (i < CATEGORIES_CONFIG.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
             
             categoryMainContent.innerHTML = ''; 
             
@@ -1607,7 +1632,7 @@
                 
                 if (category.movies.length > 0) {
                     indexLinks.push(`<a href="#section-${id}" class="index-item">${category.name}</a>`);
-                    const categoryTitle = `${category.name} (50/50 Mix)`; 
+                    const categoryTitle = `${category.name}`; 
                     displayMovies(category.movies, categoryTitle, categoryMainContent, false, id);
                     contentLoaded = true;
 
@@ -1617,8 +1642,7 @@
                         name: category.name,
                         idSlug: id,
                         title: categoryTitle,
-                        enPage: 1,
-                        hiPage: 1,
+                        page: 1,
                         loadedIds: loadedSet
                     };
 
@@ -1675,23 +1699,13 @@
         // Render skeleton loaders inside grid
         const skeletonWrapper = renderSkeletonCards(gridContainer, 4);
 
-        state.enPage += 1;
-        state.hiPage += 1;
+        state.page += 1;
 
-        const enUrl = `${DISCOVER_BASE_URL}&with_genres=${genreId}&with_original_language=en&vote_count.gte=100&page=${state.enPage}`;
-        const hiUrl = `${DISCOVER_BASE_URL}&with_genres=${genreId}&with_original_language=hi&vote_count.gte=50&page=${state.hiPage}`;
+        const url = `${DISCOVER_BASE_URL}&with_genres=${genreId}&primary_release_date.gte=2025-01-01&page=${state.page}`;
 
         try {
-            const [enData, hiData] = await Promise.all([
-                fetchWithBackoff(enUrl).then(r => r.json()).catch(() => ({ results: [] })),
-                fetchWithBackoff(hiUrl).then(r => r.json()).catch(() => ({ results: [] }))
-            ]);
-
-            const englishMovies = enData.results || [];
-            const hindiMovies = hiData.results || [];
-
-            const newMixed = interleaveMovies(hindiMovies, englishMovies, 8);
-            const freshMovies = newMixed.filter(m => !state.loadedIds.has(m.id));
+            const data = await fetchWithBackoff(url).then(r => r.json()).catch(() => ({ results: [] }));
+            const freshMovies = (data.results || []).filter(m => !state.loadedIds.has(m.id));
 
             // Remove skeleton loader
             skeletonWrapper.remove();
@@ -1710,7 +1724,7 @@
             console.error(`Error loading page for category ${genreId}:`, error);
             skeletonWrapper.remove();
             btn.disabled = false;
-            btn.textContent = error.message === 'HTTP_429_RATE_LIMIT' ? 'Rate limited — Retry in a moment' : 'Try Again';
+            btn.textContent = 'Try Again';
         }
     }
 
@@ -1818,7 +1832,7 @@
         };
 
         const titleSlug = 'search-results';
-        displayMovies([], `Search Results for "${query}" (50/50 Mix)`, searchView, true, titleSlug);
+        displayMovies([], `Search Results for "${query}"`, searchView, true, titleSlug);
 
         const gridContainer = searchView.querySelector(`.grid-${titleSlug}`);
         const skeletonWrapper = renderSkeletonCards(gridContainer, 6);
