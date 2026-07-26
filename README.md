@@ -2,6 +2,10 @@
 
 A single-page movie discovery app built on the [TMDB API](https://www.themoviedb.org/documentation/api). It was built as a 3rd-semester project, with one distinguishing idea: instead of showing only Hollywood movies (the default for most TMDB demo apps), every section of the app **deliberately interleaves popular English and Hindi cinema 50/50** — a home "Spotlight," genre categories, and search results all give equal real estate to Bollywood and Hollywood.
 
+### 📸 Preview
+![Movie Hunt UI 1](Screenshot%202026-07-26%20120744.png)
+![Movie Hunt UI 2](Screenshot%202026-07-26%20120833.png)
+
 Live demo: [https://hiten1896.github.io/Movie-Hunt/](https://hiten1896.github.io/Movie-Hunt/)_
 
 ---
