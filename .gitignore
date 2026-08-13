@@ -1,5 +1,4 @@
 # Local secrets — never commit your real API key
-config.js
 .env
 
 # OS / editor junk
