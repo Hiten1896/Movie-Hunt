@@ -2,11 +2,7 @@
 
 A single-page movie discovery app built on the [TMDB API](https://www.themoviedb.org/documentation/api). It was built as a 3rd-semester project, with one distinguishing idea: instead of showing only Hollywood movies (the default for most TMDB demo apps), every section of the app **deliberately interleaves popular English and Hindi cinema 50/50** — a home "Spotlight," genre categories, and search results all give equal real estate to Bollywood and Hollywood.
 
-### 📸 Preview
-![Movie Hunt UI 1](Screenshot%202026-07-26%20120744.png)
-![Movie Hunt UI 2](Screenshot%202026-07-26%20120833.png)
-
-Live demo: [https://hiten1896.github.io/Movie-Hunt/](https://hiten1896.github.io/Movie-Hunt/)_
+Live demo: _add your GitHub Pages link here once deployed_
 
 ---
 
@@ -19,9 +15,8 @@ Live demo: [https://hiten1896.github.io/Movie-Hunt/](https://hiten1896.github.io
 - **Movie detail modal** — click any poster to see the overview, genres, runtime, rating, top cast, and a link to the trailer on YouTube.
 - **Watchlist** — click the heart icon on any card to save it. Stored in `localStorage`, so it persists across visits on the same device/browser with zero backend or login required.
 - Fully responsive, from phones to widescreen desktop.
-- **PWA & Offline Support** — Includes a `manifest.json` and Service Worker (`sw.js`) so users can install it as an app and access cached assets offline.
 
-## 🧱 Tech stack
+## 🧱 Tech Stack
 
 - Plain HTML/CSS/JavaScript — no build step, no framework, no bundler.
 - [Tailwind CSS (CDN build)](https://tailwindcss.com/) for a handful of utility classes, layered under a custom CSS design system (see the `:root` variables in `index.html`).
@@ -32,7 +27,7 @@ Live demo: [https://hiten1896.github.io/Movie-Hunt/](https://hiten1896.github.io
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/Hiten1896/movie-hunt.git
+   git clone https://github.com/<your-username>/movie-hunt.git
    cd movie-hunt
    ```
 
@@ -60,25 +55,23 @@ Live demo: [https://hiten1896.github.io/Movie-Hunt/](https://hiten1896.github.io
      python3 -m http.server 8000
      ```
 
+## 📦 Deploying to GitHub Pages
+
+1. Push the repo to GitHub (with `config.js` correctly excluded by `.gitignore`).
+2. Since GitHub Pages can't hold secrets, you have two options:
+   - **Simplest:** commit a `config.js` with your key anyway. TMDB's v3 API key is rate-limited per key but not treated as a high-security secret in most public demo projects — just be aware anyone can see and use it if you do this.
+   - **Cleaner:** keep `config.js` out of the repo and instead add a GitHub Actions step that writes it from a repository secret (`TMDB_API_KEY`) at deploy time. See the "Master Prompt" below — this is one of the tasks queued up for further work.
+3. In your repo settings, enable **Pages → Deploy from branch → `main` / root**.
 
 ## 📁 Project structure
 
 ```
 movie-hunt/
-├── .github/              # GitHub Actions workflows
-├── css/                  # Stylesheets
-├── js/                   # Modular JavaScript files
-├── .env                  # Environment variables
-├── .env.example          # Environment template
-├── .gitignore            # Git ignore rules
-├── README.md             # Project documentation
-├── app.css               # Main app stylesheet
-├── app.js                # Core app logic
-├── config.example.js     # API config template
-├── env.js                # Environment config loader
-├── index.html            # Main HTML entry point
-├── manifest.json         # PWA manifest
-└── sw.js                 # Service worker
+├── index.html          # The entire app: markup, styles, and logic
+├── config.js            # Your real API key (git-ignored, created by you)
+├── config.example.js    # Template for config.js — safe to commit
+├── .gitignore
+└── README.md
 ```
 
 ## ⚠️ Known limitations / honest notes
