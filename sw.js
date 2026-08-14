@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movie-hunt-shell-v1';
+const CACHE_NAME = 'myway-shell-v1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -49,3 +49,9 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+
+
+
+
+

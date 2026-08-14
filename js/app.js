@@ -211,3 +211,8 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+
+
+
+

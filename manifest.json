@@ -1,6 +1,6 @@
 {
-  "name": "Movie Hunt",
-  "short_name": "Movie Hunt",
+  "name": "MyWay",
+  "short_name": "MyWay",
   "description": "Discover popular English & Hindi movies side-by-side with 50/50 balanced recommendations, search, and personal watchlist.",
   "start_url": "./index.html",
   "display": "standalone",
@@ -14,3 +14,9 @@
     }
   ]
 }
+
+
+
+
+
+

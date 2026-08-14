@@ -1,6 +1,6 @@
-# 🎬 Movie Hunt
+# 🎬 MyWay
 
-A single-page movie discovery app built on the [TMDB API](https://www.themoviedb.org/documentation/api) — with one deliberate twist. Most TMDB demo apps default to Hollywood-only listings. Movie Hunt doesn't: every section — the home "Spotlight," genre categories, and search results — **interleaves popular English and Hindi cinema 50/50**, giving Bollywood and Hollywood equal real estate.
+A single-page movie discovery app built on the [TMDB API](https://www.themoviedb.org/documentation/api) — with one deliberate twist. Most TMDB demo apps default to Hollywood-only listings. MyWay doesn't: every section — the home "Spotlight," genre categories, and search results — **interleaves popular English and Hindi cinema 50/50**, giving Bollywood and Hollywood equal real estate.
 
 **[🔗 Live Demo](#)** *(add your GitHub Pages link here once deployed)*
 
@@ -29,8 +29,8 @@ A single-page movie discovery app built on the [TMDB API](https://www.themoviedb
 
 **1. Clone the repo**
 ```bash
-git clone https://github.com/Hiten1896/Movie-Hunt.git
-cd Movie-Hunt
+git clone https://github.com/Hiten1896/myway.git
+cd myway
 ```
 
 **2. Get a free TMDB API key**
@@ -64,7 +64,7 @@ npm run build
 ## 📁 Project Structure
 
 ```
-movie-hunt/
+myway/
 ├── index.html          # Markup entry point
 ├── app.js / app.css     # Core application logic and styles
 ├── env.js                # Environment/config loading helper
@@ -95,3 +95,8 @@ Built using the [TMDB API](https://www.themoviedb.org/documentation/api). This p
 ## 📄 License
 
 Licensed under the [MIT License](./LICENSE).
+
+
+
+
+

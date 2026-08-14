@@ -119,3 +119,9 @@ window.getFirebase = () => ({
 export { db, auth, doc, setDoc, deleteDoc, collection, getDocs, onSnapshot };
 
 initializeFirebase();
+
+
+
+
+
+

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Movie Hunt — discover popular Hollywood and Bollywood movies side by side, search, and build your own watchlist. Powered by TMDB.">
+    <meta name="description" content="MyWay — discover popular Hollywood and Bollywood movies side by side, search, and build your own watchlist. Powered by TMDB.">
     <meta name="theme-color" content="#8A2BE2">
-    <title>Movie Hunt</title>
+    <title>MyWay</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://image.tmdb.org">
@@ -981,7 +981,7 @@
                 <span id="theme-toggle-label">Dark Mode</span>
             </button>
         </div>
-        <h1>MOVIE HUNT</h1>
+        <h1>MyWay</h1>
         <div class="search-container">
             <div class="search-bar-wrapper">
                 <input type="text" id="search-input" placeholder="Search for a movie title...">
@@ -1127,7 +1127,7 @@
 
     // --- DARK MODE THEME MANAGEMENT ---
     function initTheme() {
-        const savedTheme = localStorage.getItem('movieHunt_theme');
+        const savedTheme = localStorage.getItem('myWay_theme');
         if (savedTheme) {
             setTheme(savedTheme);
         } else {
@@ -1146,7 +1146,7 @@
             if (themeToggleIcon) themeToggleIcon.textContent = '🌙';
             if (themeToggleLabel) themeToggleLabel.textContent = 'Dark Mode';
         }
-        localStorage.setItem('movieHunt_theme', theme);
+        localStorage.setItem('myWay_theme', theme);
     }
 
     if (themeToggleBtn) {
@@ -1157,7 +1157,7 @@
     }
 
     // --- WATCHLIST LOGIC ---
-    const WATCHLIST_STORAGE_KEY = 'movieHunt_watchlist_v1';
+    const WATCHLIST_STORAGE_KEY = 'myWay_watchlist_v1';
     let currentWatchlist = new Set();
     let watchlistData = {};
 
@@ -2239,3 +2239,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+
